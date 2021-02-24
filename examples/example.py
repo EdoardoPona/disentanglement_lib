@@ -72,10 +72,12 @@ train.train_with_gin(os.path.join(path_vae, "model"), overwrite, ["model.gin"])
 # To train a custom model, we have to provide an implementation of the class
 # GaussianEncoderModel in the
 # disentanglement_lib.methods.unsupervised.gaussian_encoder_model module.
+
 # For simplicty, we will subclass the BaseVAE class in
 # disentanglement_lib.methods.unsupervised.vae which will train a VAE style
 # model where the loss is given by a reconstruction loss (configured via gin)
 # plus a custom regularizer (needs to be implemented.)
+
 @gin.configurable("BottleneckVAE")  # This will allow us to reference the model.
 class BottleneckVAE(vae.BaseVAE):
   """BottleneckVAE.

@@ -437,3 +437,6 @@ class BetaTCVAE(BaseVAE):
   def regularizer(self, kl_loss, z_mean, z_logvar, z_sampled):
     tc = (self.beta - 1.) * total_correlation(z_sampled, z_mean, z_logvar)
     return tc + kl_loss
+
+
+## TODO build graph convolutional vae (guassian latent space first, then mixture) 
