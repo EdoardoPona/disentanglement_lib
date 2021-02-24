@@ -358,3 +358,7 @@ def test_decoder(latent_tensor, output_shape, is_training=False):
   del is_training
   output = tf.layers.dense(latent_tensor, np.prod(output_shape), name="d1")
   return tf.reshape(output, shape=[-1] + output_shape)
+
+
+## TODO add graph convolutional layers 
+## TODO figure out gin configuration
