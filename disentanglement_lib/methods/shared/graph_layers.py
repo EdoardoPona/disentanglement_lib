@@ -1,11 +1,15 @@
+import tensorflow.compat.v1 as tf
+import tensorflow_probability as tfp 
 
-#flags = tf.app.flags
-flags = tf.compat.v1.flags
+tfkl = tf.keras.layers 
+tfd = tfp.distributions 
+
+tf.disable_eager_execution()
 
 
+## TODO implement this some other way 
 # global unique layer ID dictionary for layer name assignment
 _LAYER_UIDS = {}
-
 
 def get_layer_uid(layer_name=''):
     """Helper function, assigns unique layer IDs
@@ -96,6 +100,9 @@ class GraphConvolutionSparse(Layer):
 
     def _call(self, inputs):
         x = inputs
+
+
+
         x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
         x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
         x = tf.sparse_tensor_dense_matmul(self.adj, x)

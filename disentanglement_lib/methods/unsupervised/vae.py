@@ -33,54 +33,80 @@ import gin.tf
 from tensorflow.contrib import tpu as contrib_tpu
 
 
+## TODO finish me 
+class GraphVAE():           # not gaussian encoder model
+    def model_fn(self, features, labels, mode, params):
+        del labels 
+        is_training(mode == tf.estimator.ModeKeys.TRAIN) 
+        z_mean, z_log, z = self.graph_conv_encoder()
+input_dim, 
+                        hidden1_size, 
+                        hidden2_size, 
+                        output_dim, 
+                        adj, 
+                        inputs, 
+                        features_nonzero,
+                        n_samples, 
+                        dropout,
+                        decoder='gaussian'):   
+
+    def encoder(is_training):
+        return architectures.make_gaussian_encoder(
+
+
+    def decoder(): 
+
+    
+
+
 class BaseVAE(gaussian_encoder_model.GaussianEncoderModel):
   """Abstract base class of a basic Gaussian encoder model."""
 
-  def model_fn(self, features, labels, mode, params):
-    """TPUEstimator compatible model function."""
-    del labels
-    is_training = (mode == tf.estimator.ModeKeys.TRAIN)
-    data_shape = features.get_shape().as_list()[1:]
-    z_mean, z_logvar = self.gaussian_encoder(features, is_training=is_training)
-    z_sampled = self.sample_from_latent_distribution(z_mean, z_logvar)
-    reconstructions = self.decode(z_sampled, data_shape, is_training)
-    per_sample_loss = losses.make_reconstruction_loss(features, reconstructions)
-    reconstruction_loss = tf.reduce_mean(per_sample_loss)
-    kl_loss = compute_gaussian_kl(z_mean, z_logvar)
-    regularizer = self.regularizer(kl_loss, z_mean, z_logvar, z_sampled)
-    loss = tf.add(reconstruction_loss, regularizer, name="loss")
-    elbo = tf.add(reconstruction_loss, kl_loss, name="elbo")
-    if mode == tf.estimator.ModeKeys.TRAIN:
-      optimizer = optimizers.make_vae_optimizer()
-      update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-      train_op = optimizer.minimize(
-          loss=loss, global_step=tf.train.get_global_step())
-      train_op = tf.group([train_op, update_ops])
-      tf.summary.scalar("reconstruction_loss", reconstruction_loss)
-      tf.summary.scalar("elbo", -elbo)
+    def model_fn(self, features, labels, mode, params):
+        """TPUEstimator compatible model function."""
+        del labels
+        is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+        data_shape = features.get_shape().as_list()[1:]
+        z_mean, z_logvar = self.gaussian_encoder(features, is_training=is_training)
+        z_sampled = self.sample_from_latent_distribution(z_mean, z_logvar)
+        reconstructions = self.decode(z_sampled, data_shape, is_training)
+        per_sample_loss = losses.make_reconstruction_loss(features, reconstructions)
+        reconstruction_loss = tf.reduce_mean(per_sample_loss)
+        kl_loss = compute_gaussian_kl(z_mean, z_logvar)
+        regularizer = self.regularizer(kl_loss, z_mean, z_logvar, z_sampled)
+        loss = tf.add(reconstruction_loss, regularizer, name="loss")
+        elbo = tf.add(reconstruction_loss, kl_loss, name="elbo")
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            optimizer = optimizers.make_vae_optimizer()
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            train_op = optimizer.minimize(
+            loss=loss, global_step=tf.train.get_global_step())
+            train_op = tf.group([train_op, update_ops])
+            tf.summary.scalar("reconstruction_loss", reconstruction_loss)
+            tf.summary.scalar("elbo", -elbo)
 
-      logging_hook = tf.train.LoggingTensorHook({
-          "loss": loss,
-          "reconstruction_loss": reconstruction_loss,
-          "elbo": -elbo
-      },
-                                                every_n_iter=100)
-      return contrib_tpu.TPUEstimatorSpec(
-          mode=mode,
-          loss=loss,
-          train_op=train_op,
-          training_hooks=[logging_hook])
-    elif mode == tf.estimator.ModeKeys.EVAL:
-      return contrib_tpu.TPUEstimatorSpec(
-          mode=mode,
-          loss=loss,
-          eval_metrics=(make_metric_fn("reconstruction_loss", "elbo",
-                                       "regularizer", "kl_loss"),
-                        [reconstruction_loss, -elbo, regularizer, kl_loss]))
-    else:
-      raise NotImplementedError("Eval mode not supported.")
+            logging_hook = tf.train.LoggingTensorHook({
+              "loss": loss,
+              "reconstruction_loss": reconstruction_loss,
+              "elbo": -elbo
+            },
+                                                                every_n_iter=100)
+            return contrib_tpu.TPUEstimatorSpec(
+              mode=mode,
+              loss=loss,
+              train_op=train_op,
+              training_hooks=[logging_hook])
+        elif mode == tf.estimator.ModeKeys.EVAL:
+            return contrib_tpu.TPUEstimatorSpec(
+              mode=mode,
+              loss=loss,
+              eval_metrics=(make_metric_fn("reconstruction_loss", "elbo",
+                                           "regularizer", "kl_loss"),
+                            [reconstruction_loss, -elbo, regularizer, kl_loss]))
+        else:
+            raise NotImplementedError("Eval mode not supported.")
 
-  def gaussian_encoder(self, input_tensor, is_training):
+    def gaussian_encoder(self, input_tensor, is_training):
     """Applies the Gaussian encoder to images.
 
     Args:
@@ -90,13 +116,13 @@ class BaseVAE(gaussian_encoder_model.GaussianEncoderModel):
     Returns:
       Tuple of tensors with the mean and log variance of the Gaussian encoder.
     """
-    return architectures.make_gaussian_encoder(
-        input_tensor, is_training=is_training)
+        return architectures.make_gaussian_encoder(
+            input_tensor, is_training=is_training)
 
-  def decode(self, latent_tensor, observation_shape, is_training):
+    def decode(self, latent_tensor, observation_shape, is_training):
     """Decodes the latent_tensor to an observation."""
-    return architectures.make_decoder(
-        latent_tensor, observation_shape, is_training=is_training)
+        return architectures.make_decoder(
+            latent_tensor, observation_shape, is_training=is_training)
 
 
 def shuffle_codes(z):
@@ -439,4 +465,3 @@ class BetaTCVAE(BaseVAE):
     return tc + kl_loss
 
 
-## TODO build graph convolutional vae (guassian latent space first, then mixture) 
