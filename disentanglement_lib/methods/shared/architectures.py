@@ -21,6 +21,8 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 import gin.tf
 
+import graph_layers 
+
 
 @gin.configurable("encoder", whitelist=["num_latent", "encoder_fn"])
 def make_gaussian_encoder(input_tensor,
@@ -205,6 +207,55 @@ def conv_encoder(input_tensor, num_latent, is_training=True):
   log_var = tf.layers.dense(e5, num_latent, activation=None, name="log_var")
   return means, log_var
 
+      self.hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+                                              output_dim=self.hidden1_size,
+                                              adj=self.adj,
+                                              features_nonzero=self.features_nonzero,
+                                              act=tf.nn.relu,
+                                              dropout=self.dropout)(self.inputs)
+
+@gin.configurable("graph_conv_encoder", whitelist=[])
+def graph_conv_encoder(input_dim, 
+                        hidden1_size, 
+                        hidden2_size, 
+                        output_dim, 
+                        adj, 
+                        inputs, 
+                        features_nonzero,
+                        n_samples, 
+                        dropout,
+                        decoder='gaussian'):   # TODO finish
+    """ Graph convolutional encoder for GraphVAE 
+
+    Args:
+        decoder: String in {"gaussian", "mixture"} refers to latent space distribution """
+   
+    shared_hidden = GraphConvolutionSparse(input_dim=input_dim,
+                                              output_dim=hidden1_size,
+                                              adj=adj,
+                                              features_nonzero=features_nonzero,
+                                              act=tf.nn.relu,
+                                              dropout=dropout)(inputs)
+
+    if decoder=="gaussian":
+        z_mean = GraphConvolution(input_dim=hidden1_size,
+                                      output_dim=hidden2_size,
+                                      name='z_',
+                                      adj=adj,
+                                      act=lambda x: x,
+                                      dropout=dropout)(shared_hidden)
+
+        z_log_std = GraphConvolution(input_dim=hidden1_size,
+                                          output_dim=hidden2_size,
+                                          name='std_',
+                                          adj=adj,
+                                          act=lambda x: x,
+                                          dropout=dropout)(shared_hidden)    
+
+        z = z_mean + tf.random_normal([n_samples, hidden2_size]) * tf.exp(z_log_std)
+    # how do we return these? in the original implementation they are class fields
+    return {'z_mean': z_mean, 'z_log_std': z_log_std, 'z': z}
+
 
 @gin.configurable("fc_decoder", whitelist=[])
 def fc_decoder(latent_tensor, output_shape, is_training=True):
@@ -360,5 +411,18 @@ def test_decoder(latent_tensor, output_shape, is_training=False):
   return tf.reshape(output, shape=[-1] + output_shape)
 
 
+@gin.configurable("inner_product_decoder", whitelist=[]) 
+def inner_product_decoder(input_dim, dropout, act=tf.nn.sigmoid, inputs, **kwargs):
+    return graph_layers.InnerProductDecoder(input_dim, droupout, act, **kwargs)(inputs)
+
+@gin.configurable("gaussian_exponential_decoder", whitelist=[])
+def gaussian_exponential_decoder(input_dim, kernel_parameter=0.1, dropout=0., act=tf.nn.sigmoid, inputs, **kwargs):
+    return graph_layers.GaussianExponentialDecoder(input_dim, kernel_parameter, dropout, act, **kwargs)(inputs)
+
+
+
+
 ## TODO add graph convolutional layers 
 ## TODO figure out gin configuration
+## TODO add auxiliary predictor 
+## TODO add discriminator 
