@@ -416,9 +416,13 @@ def test_decoder(latent_tensor, output_shape, is_training=False):
   return tf.reshape(output, shape=[-1] + output_shape)
 
 
+def make_inner_product_decoder(input_dim, dropout, act=tf.nn.sigmoid, inputs, **kwargs):
+    with tf.variable_scope("inner_product_decoder"):
+        return inner_product_decoder(input_dim, droupout, inputs, **kwargs): 
+
 ## TODO can we create this with the standard creator make_discriminator? 
 @gin.configurable("inner_product_decoder", whitelist=[]) 
-def inner_product_decoder(input_dim, dropout, act=tf.nn.sigmoid, inputs, **kwargs):    
+def inner_product_decoder(input_dim, dropout, inputs, act=tf.nn.sigmoid, **kwargs):    
     return graph_layers.InnerProductDecoder(input_dim, droupout, act, **kwargs)(inputs)
 
 @gin.configurable("gaussian_exponential_decoder", whitelist=[])

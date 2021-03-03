@@ -33,30 +33,21 @@ import gin.tf
 from tensorflow.contrib import tpu as contrib_tpu
 
 
-## TODO finish me 
+# TODO figure out training of this. Shall losses be computed in here, like for other models? 
 class GraphVAE():           # not gaussian encoder model
-    def model_fn(self, features, labels, mode, params):
-        del labels 
-        is_training(mode == tf.estimator.ModeKeys.TRAIN) 
-        z_mean, z_log, z = self.graph_conv_encoder()
-input_dim, 
-                        hidden1_size, 
-                        hidden2_size, 
-                        output_dim, 
-                        adj, 
-                        inputs, 
-                        features_nonzero,
-                        n_samples, 
-                        dropout,
-                        decoder='gaussian'):   
+    def model_fn(self, placeholders, num_features, num_nodes, feaures_nonzero, **kwargs):
+        # is_training(mode == tf.estimator.ModeKeys.TRAIN) 
 
-    def encoder(is_training):
-        return architectures.make_gaussian_encoder(
+        z_mean, z_log, z = encoder(placeholders['adj'], placeholders['features'], placeholders['features_nonzero'])
+        reconstructions = decoder(z) 
 
+        return z_mean, z_log, z, reconstructions
 
-    def decoder(): 
+    def encoder(adj, inputs, features_nonzero):
+        return architectures.make_graph_conv_encoder(adj, inputs, features_nonzero) 
 
-    
+    def decoder(z): 
+        return architectures.make_inner_product_decoder(z)
 
 
 class BaseVAE(gaussian_encoder_model.GaussianEncoderModel):
